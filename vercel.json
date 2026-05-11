@@ -1,7 +1,13 @@
 {
   "version": 2,
+  "name": "franchise-service-app",
   "framework": "vite",
+  "public": true,
   "rewrites": [
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
