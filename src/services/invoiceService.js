@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 
 const INVOICE_SELECT = `
   id,

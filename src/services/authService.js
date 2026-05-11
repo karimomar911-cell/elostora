@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 import { validateLogin, validatePasswordChange, validateUserCreation, isValidUUID } from '../utils/validation'
 
 // ─────────────────────────────────────────────
@@ -77,7 +77,7 @@ export const getSession = async () => {
 // Uses an isolated client to prevent session override
 // ─────────────────────────────────────────────
 import { createClient } from '@supabase/supabase-js'
-import { supabaseUrl, supabaseAnonKey } from '../lib/supabaseClient'
+import { supabaseUrl, supabaseAnonKey } from '../core/api/supabaseClient'
 
 export const adminCreateUser = async ({ email, password, full_name, phone, role, service_center_id }) => {
   // Validate all inputs before creating user

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 
 // ─────────────────────────────────────────────
 // Search invoices by client name or car model

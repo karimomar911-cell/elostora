@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 
 // ── Upsert a car (register or transfer ownership) ──
 export const upsertCar = async ({ chassis_number, plate_number, client_id, car_model }) => {

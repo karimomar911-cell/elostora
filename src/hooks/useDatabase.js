@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 import toast from 'react-hot-toast'
 
 /**

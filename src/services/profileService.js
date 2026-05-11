@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 import { deleteCarsByClient } from './carService'
 
 // ── Fetch all profiles (with service center join) ──

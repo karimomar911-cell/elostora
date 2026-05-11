@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 
 // ── Fetch all service centers ──
 export const fetchServiceCenters = async () => {

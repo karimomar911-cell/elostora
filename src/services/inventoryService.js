@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../core/api/supabaseClient'
 import { logInventoryAction } from './inventoryLogService'
 
 export const fetchInventory = async () => {
