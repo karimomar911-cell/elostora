@@ -7,7 +7,7 @@ import { clientSchema } from '../../core/validation/schemas'
 import { adminCreateUser } from '../../services/authService'
 import { fetchProfilesByCenter, createProfile, updateProfile } from '../../services/profileService'
 import { fetchInvoicesByClient } from '../../services/invoiceService'
-import { upsertCar, fetchCarsByClient } from '../../services/carService'
+import { upsertCar, createCar, fetchCarsByClient, fetchCarByChassis } from '../../services/carService'
 import Modal          from '../../components/Modal'
 import EmptyState     from '../../components/EmptyState'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -44,17 +44,44 @@ const ClientForm = ({ client, centerId, onSave, onClose }) => {
 
   const onSubmit = async (data) => {
     try {
+      const chassisNumber = data.chassis_number?.trim()
       let clientId = client?.id
 
+      if (chassisNumber) {
+        const existingCar = await fetchCarByChassis(chassisNumber)
+        if (existingCar && existingCar.client_id !== clientId) {
+          const ownerName = existingCar.profiles?.full_name || existingCar.client_id
+          throw new Error(`رقم الشاسيه ${chassisNumber} موجود بالفعل لدى العميل ${ownerName}.`)
+        }
+      }
+
       if (isNew) {
-        const { user: newAuthUser } = await adminCreateUser({
-          email: data.email,
-          password: data.password,
-          full_name: data.full_name,
-          phone: data.phone,
-          role: 'client',
-          service_center_id: centerId,
-        })
+        // Check if email already exists in the system
+        const existingProfiles = await fetchProfilesByCenter(centerId)
+        const emailExists = existingProfiles.some(p => p.email === data.email && p.role === 'client')
+        
+        let newAuthUser = null
+        if (!emailExists) {
+          // Create new auth user only if email doesn't exist
+          const authResult = await adminCreateUser({
+            email: data.email,
+            password: data.password,
+            full_name: data.full_name,
+            phone: data.phone,
+            role: 'client',
+            service_center_id: centerId,
+          })
+          newAuthUser = authResult.user
+        } else {
+          // Email exists, find the existing user
+          const existingUser = existingProfiles.find(p => p.email === data.email && p.role === 'client')
+          if (existingUser) {
+            clientId = existingUser.id
+            console.log(`ℹ️ استخدام المستخدم الموجود: ${existingUser.full_name}`)
+          } else {
+            throw new Error('المستخدم موجود لكن لم يتمكن من العثور عليه')
+          }
+        }
         
         if (newAuthUser) {
           clientId = newAuthUser.id
@@ -64,6 +91,7 @@ const ClientForm = ({ client, centerId, onSave, onClose }) => {
             phone: data.phone,
             role: 'client',
             service_center_id: centerId,
+            email: data.email,
           })
         }
       } else {
@@ -73,19 +101,36 @@ const ClientForm = ({ client, centerId, onSave, onClose }) => {
         })
       }
 
-      if (clientId && data.chassis_number) {
-        await upsertCar({
-          chassis_number: data.chassis_number,
-          plate_number: data.plate_number,
-          car_model: data.car_model,
-          client_id: clientId
-        })
+      if (clientId && chassisNumber) {
+        if (isNew) {
+          await createCar({
+            chassis_number: chassisNumber,
+            plate_number: data.plate_number,
+            car_model: data.car_model,
+            client_id: clientId
+          })
+        } else {
+          await upsertCar({
+            chassis_number: chassisNumber,
+            plate_number: data.plate_number,
+            car_model: data.car_model,
+            client_id: clientId
+          })
+        }
       }
 
       toast.success(isNew ? 'تم تسجيل العميل بنجاح.' : 'تم تحديث بيانات العميل.')
       onSave()
     } catch (err) {
-      toast.error(err.message || 'حدث خطأ أثناء العملية.')
+      const message = err.message || ''
+      if (message.includes('already registered') || message.includes('already exists') || message.includes('duplicate')) {
+        toast.error('هذا البريد الإلكتروني مرتبط بعميل موجود بالفعل. جرب إضافة شاسيه مختلف أو بريد إلكتروني جديد.')
+      } else if (message.includes('رقم الشاسيه')) {
+        // Chassis number error - pass it through
+        toast.error(message)
+      } else {
+        toast.error(message || 'حدث خطأ أثناء العملية.')
+      }
     }
   }
 

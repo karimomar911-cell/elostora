@@ -3,6 +3,12 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
 import AppRouter from './routes/AppRouter'
 import SupportAssistant from './components/SupportAssistant'
+import { testGeminiAPI } from './services/geminiDebug'
+
+// Expose debug utilities to window for console testing
+if (typeof window !== 'undefined') {
+  window.testGeminiAPI = testGeminiAPI
+}
 
 const App = () => (
   <BrowserRouter>

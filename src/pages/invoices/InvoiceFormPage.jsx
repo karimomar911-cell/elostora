@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../../core/auth/AuthProvider'
 import { invoiceSchema } from '../../core/validation/schemas'
 import { createInvoice } from '../../services/invoiceService'
-import { fetchProfilesByCenter } from '../../services/profileService'
+import { fetchProfilesByCenter, fetchAllProfiles } from '../../services/profileService'
 import { calculateInvoiceTotals, formatCurrency } from '../../utils/invoiceUtils'
 import { ROUTES } from '../../core/routing/routes'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -16,6 +16,7 @@ const InvoiceFormPage = () => {
   const { profile } = useAuth()
   const navigate    = useNavigate()
   const centerId    = profile?.service_center_id
+  const isDeveloper = profile?.role === 'developer'
 
   const [clients, setClients]   = useState([])
   const [inventory, setInventory] = useState([])
@@ -60,26 +61,42 @@ const InvoiceFormPage = () => {
 
   // Load clients and inventory
   useEffect(() => {
-    if (!centerId) { 
+    if (!isDeveloper && !centerId) { 
       setLoadingClients(false)
       return 
     }
     const load = async () => {
       try {
-        const [allClients, allInventory] = await Promise.all([
-          fetchProfilesByCenter(centerId),
-          fetchInventory(centerId)
-        ])
-        setClients(allClients.filter(p => p.role === 'client'))
+        // Developers see all clients, admins/employees see only their center's clients
+        const allClients = isDeveloper 
+          ? await fetchAllProfiles()
+          : await fetchProfilesByCenter(centerId)
+        
+        const allInventory = centerId 
+          ? await fetchInventory(centerId)
+          : []
+        
+        console.log('📋 All profiles:', allClients)
+        const filteredClients = allClients.filter(p => p.role === 'client')
+        console.log('✓ Filtered clients with role="client":', filteredClients)
+        
+        setClients(filteredClients)
         setInventory(allInventory)
+        
+        if (filteredClients.length === 0) {
+          console.warn('⚠️ No clients found! Check:')
+          console.warn('  - Clients created?')
+          console.warn('  - All profiles:', allClients.map(p => ({ id: p.id, role: p.role, center: p.service_center_id, name: p.full_name })))
+        }
       } catch (err) {
+        console.error('Error loading data:', err)
         toast.error('Failed to load data.')
       } finally {
         setLoadingClients(false)
       }
     }
     load()
-  }, [centerId])
+  }, [centerId, isDeveloper])
 
   const onClientSelect = (clientId) => {
     const client = clients.find(c => c.id === clientId)
@@ -209,6 +226,11 @@ const InvoiceFormPage = () => {
                     <div className="flex items-center gap-2 text-sm text-slate-400 p-3 bg-slate-50 rounded-xl">
                       <div className="w-4 h-4 border-2 border-slate-200 border-t-primary-500 rounded-full animate-spin" /> 
                       Syncing client list…
+                    </div>
+                  ) : clients.length === 0 ? (
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
+                      <p className="text-sm font-bold text-amber-900 mb-2">⚠️ No clients found</p>
+                      <p className="text-xs text-amber-700">Make sure clients have been created in this service center. Check the Admin Clients page to register them first.</p>
                     </div>
                   ) : (
                     <select 

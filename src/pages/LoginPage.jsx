@@ -197,23 +197,23 @@ const LoginPage = () => {
       <div className="absolute top-[30%] right-[20%] w-[30%] h-[30%] bg-blue-500/20 blur-[100px] rounded-full animate-float animate-delay-200 mix-blend-screen pointer-events-none" />
       
       {/* ── Main Login Card (Glassmorphism) ── */}
-      <div className="relative z-10 w-full max-w-[1000px] flex flex-col md:flex-row bg-white/[0.03] backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] overflow-hidden animate-scale-in">
+      <div className="relative z-10 w-full max-w-2xl flex flex-col md:flex-row bg-white/[0.03] backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] overflow-hidden animate-scale-in">
         
         {/* ── Left Panel: Branding & Creative Visual ── */}
-        <div className="w-full md:w-5/12 bg-white/[0.02] border-b md:border-b-0 md:border-r border-white/10 p-10 lg:p-14 flex flex-col justify-between relative overflow-hidden">
+        <div className="w-full md:w-5/12 bg-white/[0.02] border-b md:border-b-0 md:border-r border-white/10 p-8 lg:p-10 flex flex-col justify-between relative overflow-hidden">
           {/* subtle inner glow */}
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent pointer-events-none" />
           
           <div className="relative z-10">
             {/* Dynamic Logo */}
             <div className="flex flex-col items-start gap-5 animate-fade-in">
-              <span className="text-white font-extrabold text-6xl lg:text-8xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+              <span className="text-white font-extrabold text-4xl lg:text-6xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
                 {brandName || 'Brand Name'}
               </span>
               {brandLogo ? (
-                <img src={brandLogo} alt="Brand Logo" className="w-[28rem] h-[28rem] rounded-[2rem] object-contain shadow-2xl shadow-black/50 bg-white/10 p-3" />
+                <img src={brandLogo} alt="Brand Logo" className="w-[18rem] h-[18rem] rounded-[2rem] object-contain shadow-2xl shadow-black/50 bg-white/10 p-3" />
               ) : (
-                <div className="w-[28rem] h-[28rem] bg-gradient-to-br from-indigo-500 to-fuchsia-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/30">
+                <div className="w-[18rem] h-[18rem] bg-gradient-to-br from-indigo-500 to-fuchsia-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/30">
                   <svg className="w-28 h-28 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
@@ -224,14 +224,14 @@ const LoginPage = () => {
               )}
             </div>
 
-            <div className="mt-16 sm:mt-24">
-              <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] mb-6 tracking-tight">
+            <div className="mt-12 sm:mt-16">
+              <h1 className="text-3xl lg:text-4xl font-black text-white leading-[1.1] mb-4 tracking-tight">
                 {heroTitle1}<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400">
                   {heroTitle2}
                 </span>
               </h1>
-              <p className="text-slate-400/80 text-lg leading-relaxed font-medium max-w-sm">
+              <p className="text-slate-400/80 text-base leading-relaxed font-medium max-w-sm">
                 {heroSub}
               </p>
             </div>
@@ -250,14 +250,14 @@ const LoginPage = () => {
         </div>
 
         {/* ── Right Panel: Form ── */}
-        <div className="w-full md:w-7/12 p-10 lg:p-14 flex items-center justify-center">
+        <div className="w-full md:w-7/12 p-8 lg:p-10 flex items-center justify-center">
           <div className="w-full max-w-md">
-            <div className="mb-10 text-center md:text-left">
-              <h2 className="text-3xl font-black text-white tracking-tight">{formTitle}</h2>
-              <p className="text-slate-400 mt-2 font-medium">{formSubtitle}</p>
+            <div className="mb-8 text-center md:text-left">
+              <h2 className="text-2xl font-black text-white tracking-tight">{formTitle}</h2>
+              <p className="text-slate-400 mt-1.5 font-medium text-sm">{formSubtitle}</p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
               {serverError && (
                 <div className="flex items-start gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl animate-fade-in">
                   <svg className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" fill="none"

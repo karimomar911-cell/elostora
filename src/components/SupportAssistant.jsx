@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../routes/routes'
 import { useAuth } from '../core/auth/AuthProvider'
+import { generateAssistantResponse, isGeminiConfigured } from '../services/geminiService'
+import toast from 'react-hot-toast'
 
 const HELP_CONTENT = [
   { 
@@ -60,12 +62,69 @@ const SupportAssistant = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedTip, setSelectedTip] = useState(null)
   const [isBouncing, setIsBouncing] = useState(true)
-  const [position, setPosition] = useState({ x: 32, y: 32 }) // bottom, left in pixels
+  const [position, setPosition] = useState({ x: 32, y: 32 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   
-  // Provide all site info universally
+  // Chat state
+  const [messages, setMessages] = useState([])
+  const [inputValue, setInputValue] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [showQuickHelp, setShowQuickHelp] = useState(true)
+  const [modelDetected, setModelDetected] = useState(null)
+  const messagesEndRef = useRef(null)
+  
+  const hasGemini = isGeminiConfigured()
   const tips = HELP_CONTENT
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading || !hasGemini) return
+
+    const userMessage = inputValue.trim()
+    setInputValue('')
+    setShowQuickHelp(false)
+
+    // Add user message to chat
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    setIsLoading(true)
+
+    try {
+      const response = await generateAssistantResponse(userMessage, messages)
+      setMessages(prev => [...prev, { role: 'assistant', content: response }])
+      // On first successful response, model is detected
+      if (!modelDetected) {
+        setModelDetected(true)
+      }
+    } catch (err) {
+      console.error('Error:', err)
+      toast.error(err.message || 'Failed to get response from AI assistant')
+      setMessages(prev => prev.slice(0, -1))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
+  const handleQuickTip = (tip) => {
+    navigate(tip.route)
+    setIsOpen(false)
+    setMessages([])
+    setShowQuickHelp(true)
+  }
 
   const handleMouseDown = (e) => {
     if (isOpen) return
@@ -81,7 +140,6 @@ const SupportAssistant = () => {
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!isDragging) return
-      // Calculate position relative to bottom-left
       const newX = e.clientX - dragOffset.x
       const newY = window.innerHeight - (e.clientY + (64 - dragOffset.y))
       setPosition({ x: Math.max(10, newX), y: Math.max(10, newY) })
@@ -110,62 +168,111 @@ const SupportAssistant = () => {
       className="fixed z-[99999]"
       style={{ left: `${position.x}px`, bottom: `${position.y}px`, pointerEvents: 'auto' }}
     >
-      {/* Help Panel */}
+      {/* Chat Panel */}
       {isOpen && (
-        <div className="absolute bottom-24 left-0 w-80 bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-white p-7 animate-fade-in origin-bottom-left overflow-hidden">
+        <div className="absolute bottom-24 left-0 w-96 h-[600px] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-white p-6 animate-fade-in origin-bottom-left flex flex-col overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
           
-          {selectedTip ? (
-            <div className="relative z-10 animate-fade-in">
+          {/* Header */}
+          <div className="relative z-10 pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 bg-primary-500 rounded-full animate-pulse" />
+                مساعد ذكي AI
+              </h3>
               <button 
-                onClick={() => setSelectedTip(null)}
-                className="text-xs font-black text-primary-600 uppercase tracking-widest flex items-center gap-1 mb-4 hover:translate-x-1 transition-transform"
+                onClick={() => setIsOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
               >
-                ← العودة للقائمة
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
-              <h4 className="text-sm font-black text-slate-900 mb-2">{selectedTip.title}</h4>
-              <p className="text-[11px] font-bold text-slate-500 leading-relaxed mb-6">
-                {selectedTip.detail}
-              </p>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => { navigate(selectedTip.route); setIsOpen(false); setSelectedTip(null); }}
-                  className="flex-1 py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-700 transition-all hover:scale-[1.02]"
+            </div>
+            {!hasGemini && (
+              <p className="text-[10px] font-bold text-amber-600 mt-2">⚠️ Gemini API key not configured</p>
+            )}
+            {hasGemini && isLoading && messages.length === 0 && (
+              <p className="text-[10px] font-bold text-blue-600 mt-2">🔍 Detecting available model...</p>
+            )}
+            {hasGemini && modelDetected && (
+              <p className="text-[10px] font-bold text-emerald-600 mt-2">✓ Model ready</p>
+            )}
+          </div>
+
+          {/* Messages Area */}
+          <div className="relative z-10 flex-1 overflow-y-auto py-4 space-y-3 pr-2 custom-scrollbar">
+            {showQuickHelp && messages.length === 0 && (
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold text-slate-500 text-center mb-4">Quick Help Topics</p>
+                {tips.slice(0, 5).map((tip, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => handleQuickTip(tip)}
+                    className="w-full text-right p-3 bg-slate-50 hover:bg-primary-50 rounded-xl transition-all border border-transparent hover:border-primary-100 text-[10px]"
+                  >
+                    <h4 className="font-black text-primary-600 mb-1">{tip.title}</h4>
+                    <p className="font-bold text-slate-400">{tip.desc}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {messages.map((msg, idx) => (
+              <div 
+                key={idx}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-xs px-4 py-2.5 rounded-2xl text-[11px] leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-primary-600 text-white rounded-br-none'
+                      : 'bg-slate-100 text-slate-900 rounded-bl-none'
+                  }`}
                 >
-                  انتقل إلى الصفحة
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="px-4 py-2.5 rounded-2xl rounded-bl-none bg-slate-100">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          {hasGemini ? (
+            <div className="relative z-10 pt-4 border-t border-slate-100">
+              <div className="flex gap-2">
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={isLoading}
+                  placeholder="اسأل عن أي شيء..."
+                  className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-900 placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+                  rows="2"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isLoading || !inputValue.trim()}
+                  className="px-3 py-2.5 bg-primary-600 text-white rounded-xl font-black text-xs hover:bg-primary-700 disabled:opacity-50 transition-all self-end"
+                >
+                  ارسل
                 </button>
               </div>
             </div>
           ) : (
-            <>
-              <h3 className="text-sm font-black text-slate-900 mb-5 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 bg-primary-500 rounded-full animate-pulse" />
-                مركز المساعدة الذكي
-              </h3>
-              
-              <div className="space-y-3">
-                {tips.map((tip, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => setSelectedTip(tip)}
-                    className="w-full text-right group p-4 bg-slate-50 hover:bg-primary-50 rounded-2xl transition-all border border-transparent hover:border-primary-100 flex items-center justify-between"
-                  >
-                    <div>
-                      <h4 className="text-[11px] font-black text-primary-600 uppercase tracking-widest mb-1 group-hover:text-primary-700">{tip.title}</h4>
-                      <p className="text-[10px] font-bold text-slate-400 group-hover:text-slate-500">{tip.desc}</p>
-                    </div>
-                    <svg className="w-4 h-4 text-slate-300 group-hover:text-primary-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
-                  </button>
-                ))}
-              </div>
-              
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="w-full mt-6 py-3 border-2 border-slate-100 text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-600 transition-all"
-              >
-                إغلاق المساعد
-              </button>
-            </>
+            <div className="relative z-10 pt-4 border-t border-slate-100 text-center text-[10px] text-amber-600 font-bold">
+              Configure your Gemini API key in .env.local to enable AI chat
+            </div>
           )}
         </div>
       )}
@@ -207,3 +314,4 @@ const SupportAssistant = () => {
 }
 
 export default SupportAssistant
+

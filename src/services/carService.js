@@ -28,6 +28,29 @@ export const fetchCarsByClient = async (clientId) => {
   return data || []
 }
 
+// ── Fetch a car by chassis number ──
+export const fetchCarByChassis = async (chassis_number) => {
+  const { data, error } = await supabase
+    .from('cars')
+    .select('id, chassis_number, client_id, profiles(full_name)')
+    .eq('chassis_number', chassis_number)
+    .maybeSingle()
+
+  if (error) throw error
+  return data || null
+}
+
+// ── Create a new car record ──
+export const createCar = async ({ chassis_number, plate_number, client_id, car_model }) => {
+  const { data, error } = await supabase
+    .from('cars')
+    .insert([{ chassis_number, plate_number, client_id, car_model }])
+    .select()
+
+  if (error) throw error
+  return data?.[0]
+}
+
 // ── Fetch all cars ──
 export const fetchAllCars = async () => {
   const { data, error } = await supabase

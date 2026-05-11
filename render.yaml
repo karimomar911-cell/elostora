@@ -8,8 +8,8 @@ services:
     rootDir: .
     envVars:
       - key: VITE_SUPABASE_URL
-        value: ""
+        value: "https://etympxjjebjfjtfgsvkq.supabase.co"
       - key: VITE_SUPABASE_ANON_KEY
-        value: ""
+        value: "sb_publishable_fMU2AnAEn8JufkahJ9Cq0w_0qt8MILs"
       - key: VITE_DEV_PASSWORD
         value: ""

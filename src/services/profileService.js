@@ -97,14 +97,49 @@ export const countProfilesByRole = async () => {
   }, {})
 }
 
-// ── Delete a profile ──
-export const deleteProfile = async (id) => {
-  // Use a bulk-style filter to bypass potential single-row RLS restrictions
-  const { error } = await supabase
+// ── Delete a profile with cleanup (transferring data to "Deleted" status) ──
+export const deleteProfileWithCleanup = async (id) => {
+  // 1. Update Invoices (Nullify ID, preserve name with marker)
+  const { error: invError } = await supabase
+    .from('invoices')
+    .update({ 
+      client_id: null,
+      created_by: null // If they were the operator
+    })
+    .or(`client_id.eq.${id},created_by.eq.${id}`)
+
+  if (invError) {
+    console.error('Failed to unlink invoices:', invError)
+    throw new Error('Failed to preserve invoice records during deletion.')
+  }
+
+  // 2. Update Cars (Nullify client ID)
+  const { error: carError } = await supabase
+    .from('cars')
+    .update({ client_id: null })
+    .eq('client_id', id)
+
+  if (carError) {
+    console.error('Failed to unlink cars:', carError)
+    throw new Error('Failed to preserve car records during deletion.')
+  }
+
+  // 3. Update Inventory Logs (Nullify performer)
+  const { error: logError } = await supabase
+    .from('inventory_logs')
+    .update({ performed_by: null })
+    .eq('performed_by', id)
+
+  if (logError) {
+    console.error('Failed to unlink logs:', logError)
+  }
+
+  // 4. Finally delete the profile
+  const { error: profError } = await supabase
     .from('profiles')
     .delete()
-    .in('id', [id]) 
+    .eq('id', id)
 
-  if (error) throw error
+  if (profError) throw profError
   return true
 }

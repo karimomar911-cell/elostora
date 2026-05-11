@@ -10,6 +10,22 @@ export const fetchServiceCenters = async () => {
   return data
 }
 
+// ── Check if service center name already exists ──
+export const checkCenterNameExists = async (name, excludeId = null) => {
+  let query = supabase
+    .from('service_centers')
+    .select('id, name')
+    .ilike('name', name)
+  
+  if (excludeId) {
+    query = query.neq('id', excludeId)
+  }
+  
+  const { data, error } = await query
+  if (error) throw error
+  return data && data.length > 0
+}
+
 // ── Fetch single service center ──
 export const fetchServiceCenter = async (id) => {
   const { data, error } = await supabase
@@ -22,6 +38,12 @@ export const fetchServiceCenter = async (id) => {
 
 // ── Create service center ──
 export const createServiceCenter = async (payload) => {
+  // Check for duplicate center name
+  const nameExists = await checkCenterNameExists(payload.name)
+  if (nameExists) {
+    throw new Error(`مركز الخدمة باسم "${payload.name}" موجود بالفعل. الرجاء اختيار اسم مختلف.`)
+  }
+  
   const { data, error } = await supabase
     .from('service_centers')
     .insert([payload])
@@ -33,6 +55,14 @@ export const createServiceCenter = async (payload) => {
 
 // ── Update service center ──
 export const updateServiceCenter = async (id, payload) => {
+  // If updating name, check for duplicates (excluding current center)
+  if (payload.name) {
+    const nameExists = await checkCenterNameExists(payload.name, id)
+    if (nameExists) {
+      throw new Error(`مركز الخدمة باسم "${payload.name}" موجود بالفعل. الرجاء اختيار اسم مختلف.`)
+    }
+  }
+  
   const { data, error } = await supabase
     .from('service_centers')
     .update(payload)

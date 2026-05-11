@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { fetchAllProfiles, updateProfile, createProfile, deleteProfile } from '../../services/profileService'
+import { fetchAllProfiles, updateProfile, createProfile, deleteProfileWithCleanup } from '../../services/profileService'
 import { useAuth } from '../../context/AuthContext'
 import { fetchServiceCenters } from '../../services/centerService'
 import Modal          from '../../components/Modal'
@@ -248,13 +248,13 @@ const UsersPage = () => {
 
     setDeleting(true)
     try {
-      await deleteProfile(deleteTarget.id)
-      toast.success('Identity successfully purged.')
+      await deleteProfileWithCleanup(deleteTarget.id)
+      toast.success('Identity successfully purged. Data preserved in history.')
       setDeleteTarget(null)
       load()
     } catch (err) {
       console.error('Delete error:', err)
-      toast.error("System Policy Block: Individual deletion is restricted. Use 'Factory Settings' for full system purge.")
+      toast.error(err.message || "Protocol Failure: System security policy blocked this operation.")
     } finally {
       setDeleting(false)
     }
