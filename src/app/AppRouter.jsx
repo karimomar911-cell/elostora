@@ -49,7 +49,10 @@ const PageFallback = () => (
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 const AppRouter = () => {
-  const { isAuthenticated, profile } = useAuth()
+  const { isAuthenticated, profile, loading } = useAuth()
+
+  // ── Prevent route evaluation while restoring session ──
+  if (loading) return <PageFallback />
 
   return (
     <Suspense fallback={<PageFallback />}>
