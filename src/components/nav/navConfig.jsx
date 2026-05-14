@@ -1,4 +1,4 @@
-import { ROUTES, ROLES } from '../../routes/routes'
+import { ROUTES, ROLES } from '../../core/routing/routes'
 
 // Icons are inline SVG components for zero dependencies
 

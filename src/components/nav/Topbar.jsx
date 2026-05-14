@@ -1,8 +1,8 @@
 import { useLocation, Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { MenuIcon, SearchIcon } from './navConfig'
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from './navConfig'
-import { ROUTES } from '../../routes/routes'
+import { ROUTES } from '../../core/routing/routes'
 
 // Build a flat map of path → label for breadcrumbs
 const buildPathMap = (role) => {

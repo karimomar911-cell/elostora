@@ -18,6 +18,7 @@ export const ProfileService = {
         )
       `)
       .eq('id', userId)
+      .eq('is_deleted', false)
       .single()
 
     if (error && error.code !== 'PGRST116') {

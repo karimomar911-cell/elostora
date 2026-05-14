@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { adminCreateUser } from '../../services/authService'
 import { fetchProfilesByCenter, createProfile, updateProfile } from '../../services/profileService'
 import { fetchInvoicesByClient } from '../../services/invoiceService'

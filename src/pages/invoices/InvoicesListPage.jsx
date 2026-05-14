@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { fetchInvoicesByCenter, deleteInvoice } from '../../services/invoiceService'
 import { formatCurrency, formatDate, exportInvoicePDF } from '../../utils/invoiceUtils'
 import Modal          from '../../components/Modal'
 import ConfirmDialog  from '../../components/ConfirmDialog'
 import EmptyState     from '../../components/EmptyState'
 import LoadingSpinner from '../../components/LoadingSpinner'
-import { ROUTES }     from '../../routes/routes'
+import { ROUTES }     from '../../core/routing/routes'
 
 // ── Invoice detail panel inside modal ──
 const InvoiceDetailPanel = ({ invoice, onClose, onDelete, centerName, role }) => {

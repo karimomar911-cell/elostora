@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { fetchProfilesByCenter } from '../../services/profileService'
 import { fetchInvoicesByCenter } from '../../services/invoiceService'
 import StatCard from '../../components/StatCard'
-import { ROUTES } from '../../routes/routes'
+import { ROUTES } from '../../core/routing/routes'
 import toast from 'react-hot-toast'
 
 const AdminDashboard = () => {

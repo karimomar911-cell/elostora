@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../routes/routes'
+import { ROUTES } from '../core/routing/routes'
 import { useAuth } from '../core/auth/AuthProvider'
 import { generateAssistantResponse, isGeminiConfigured } from '../services/geminiService'
 import toast from 'react-hot-toast'

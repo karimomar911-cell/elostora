@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { fetchInvoicesByClient } from '../../services/invoiceService'
 import Modal          from '../../components/Modal'
 import EmptyState     from '../../components/EmptyState'

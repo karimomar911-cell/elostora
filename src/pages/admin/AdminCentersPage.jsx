@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { fetchServiceCenter } from '../../services/centerService'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'

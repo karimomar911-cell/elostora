@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { useDeveloperBranding } from '../../hooks/useDeveloperBranding'
 import {
   NAV_ITEMS,

@@ -7,7 +7,7 @@ import {
   searchCenters,
 } from '../services/searchService'
 import { formatCurrency, formatDate } from '../utils/invoiceUtils'
-import { ROLES } from '../routes/routes'
+import { ROLES } from '../core/routing/routes'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 // ── Result type badges ──

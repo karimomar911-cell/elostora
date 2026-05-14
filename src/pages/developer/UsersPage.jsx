@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { fetchAllProfiles, updateProfile, createProfile, deleteProfileWithCleanup } from '../../services/profileService'
-import { useAuth } from '../../context/AuthContext'
+import { fetchAllProfiles, updateProfile, createProfile, deleteProfileWithCleanup, fetchDeletionAuditLogs } from '../../services/profileService'
+import { useAuth } from '../../core/auth/AuthProvider'
 import { fetchServiceCenters } from '../../services/centerService'
 import Modal          from '../../components/Modal'
 import EmptyState     from '../../components/EmptyState'
@@ -224,6 +224,10 @@ const UserForm = ({ user, centers, onSave, onClose }) => {
 }
 
 const UsersPage = () => {
+  // ── FIX: user/profile destructured at TOP of component (was declared 23 lines
+  //         below handleSingleDelete, causing a TDZ ReferenceError crash)
+  const { user, profile } = useAuth()
+
   const [users, setUsers]         = useState([])
   const [centers, setCenters]     = useState([])
   const [loading, setLoading]     = useState(true)
@@ -231,6 +235,8 @@ const UsersPage = () => {
   const [creating, setCreating]   = useState(false)
   const [filterRole, setFilterRole] = useState('all')
   const [search, setSearch]       = useState('')
+  const [auditLogs, setAuditLogs] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
 
   const [isResetting, setIsResetting] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -239,28 +245,40 @@ const UsersPage = () => {
 
   const handleSingleDelete = async () => {
     if (!deleteTarget) return
-    
-    if (deleteTarget.id === user.id) {
+
+    // Self-delete guard — user is now correctly in scope
+    if (deleteTarget.id === user?.id) {
       toast.error('Protocol Violation: You cannot terminate your own active identity.')
       setDeleteTarget(null)
       return
     }
 
     setDeleting(true)
+
+    // Optimistic removal — instant UI feedback
+    const previousUsers = users
+    setUsers(prev => prev.filter(u => u.id !== deleteTarget.id))
+    setDeleteTarget(null)
+
     try {
-      await deleteProfileWithCleanup(deleteTarget.id)
-      toast.success('Identity successfully purged. Data preserved in history.')
-      setDeleteTarget(null)
+      const result = await deleteProfileWithCleanup(deleteTarget.id, {
+        deletedBy: profile,   // full profile object for audit log
+        reason: '',
+      })
+      console.log('[UsersPage] delete result:', result)
+      toast.success('Identity successfully purged. Audit log preserved.')
+      // Refresh to get authoritative server state
       load()
+      loadAuditLogs()
     } catch (err) {
-      console.error('Delete error:', err)
-      toast.error(err.message || "Protocol Failure: System security policy blocked this operation.")
+      console.error('[UsersPage] delete failed — rolling back:', err)
+      // Rollback optimistic removal
+      setUsers(previousUsers)
+      toast.error(err.message || 'Protocol Failure: Deletion blocked by database policy.')
     } finally {
       setDeleting(false)
     }
   }
-
-  const { user } = useAuth()
 
   const handleFactoryReset = async () => {
     setIsResetting(true)
@@ -291,7 +309,16 @@ const UsersPage = () => {
     }
   }
 
-  useEffect(() => { load() }, [])
+  const loadAuditLogs = async () => {
+    try {
+      const logs = await fetchDeletionAuditLogs()
+      setAuditLogs(logs)
+    } catch (err) {
+      console.error('[UsersPage] audit log fetch failed:', err)
+    }
+  }
+
+  useEffect(() => { load(); loadAuditLogs() }, [])
 
   const filtered = users.filter((u) => {
     const matchRole = filterRole === 'all' || u.role === filterRole
@@ -438,19 +465,69 @@ const UsersPage = () => {
         message="This will PERMANENTLY ERASE all Inventory, Invoices, Service Centers, and Users from the database. This action cannot be undone. Are you absolutely sure?"
         onConfirm={handleFactoryReset}
         onCancel={() => setShowResetConfirm(false)}
-        confirmText={isResetting ? "Purging System..." : "Yes, WIPE ALL DATA"}
+        confirmLabel={isResetting ? 'Purging System...' : 'Yes, WIPE ALL DATA'}
+        loading={isResetting}
         danger={true}
       />
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Protocol: Terminate Identity"
-        message={`Are you sure you want to permanently delete "${deleteTarget?.full_name}"? This action cannot be reversed.`}
+        title="Confirm: Delete Identity"
+        message={`Permanently delete "${deleteTarget?.full_name}" (${deleteTarget?.role})? An audit log will be created. This cannot be undone.`}
         onConfirm={handleSingleDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => { if (!deleting) setDeleteTarget(null) }}
+        confirmLabel="Yes, Delete"
         loading={deleting}
         danger={true}
       />
+
+      {/* ── Deletion History Panel ───────────────────────────────────────── */}
+      <div className="bg-white rounded-[2.5rem] shadow-premium border border-slate-100 overflow-hidden">
+        <button
+          onClick={() => setShowHistory(h => !h)}
+          className="w-full flex items-center justify-between px-8 py-5 text-left hover:bg-slate-50/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center">
+              <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-700">Deletion Audit Log</span>
+            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 text-[10px] font-black border border-rose-100">{auditLogs.length}</span>
+          </div>
+          <svg className={`w-4 h-4 text-slate-400 transition-transform ${showHistory ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        </button>
+
+        {showHistory && (
+          <div className="border-t border-slate-100">
+            {auditLogs.length === 0 ? (
+              <p className="text-center text-xs text-slate-400 py-10">No deletion records found.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50/50">
+                    <tr>
+                      {['Deleted User','Role','Deleted By','Reason','Timestamp'].map(h => (
+                        <th key={h} className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {auditLogs.map(log => (
+                      <tr key={log.id} className="hover:bg-slate-50/30 transition-colors">
+                        <td className="px-6 py-4 text-sm font-bold text-slate-800">{log.deleted_user_name}</td>
+                        <td className="px-6 py-4"><span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-black uppercase">{log.deleted_user_role}</span></td>
+                        <td className="px-6 py-4 text-xs text-slate-500">{log.deleted_by_name}</td>
+                        <td className="px-6 py-4 text-xs text-slate-400 italic">{log.reason || '—'}</td>
+                        <td className="px-6 py-4 text-xs text-slate-400">{new Date(log.deleted_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
