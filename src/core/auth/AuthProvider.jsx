@@ -5,6 +5,7 @@ import { SessionManager } from './SessionManager'
 import { ProfileService } from './ProfileService'
 import { ROLE_HOME } from '../routing/routes'
 import { supabase } from '../api/supabaseClient'
+import { validateSchema } from '../api/schemaValidator'
 
 const AuthContext = createContext(null)
 
@@ -18,6 +19,7 @@ export const AuthProvider = ({ children }) => {
 
   const loadProfile = useCallback(async (userId, userMetadata = {}) => {
     try {
+      // Fetch profile with schema-error resilience already handled in ProfileService
       const profileData = await ProfileService.fetchProfile(userId)
       
       if (profileData) {
@@ -25,6 +27,10 @@ export const AuthProvider = ({ children }) => {
         setRecoveryRequired(false)
         return profileData
       }
+    } catch (err) {
+      console.error('[AuthProvider] fetchProfile failed (ignoring to allow fallback):', err.message)
+      // We don't throw here; we let the metadata fallback below handle it
+    }
 
       // If no profile exists yet, fall back to the authenticated user's metadata.
       // This is required in development when the profile trigger has not created a row.
@@ -60,6 +66,9 @@ export const AuthProvider = ({ children }) => {
     let ignore = false // Prevent race conditions from multiple concurrent profile loads
 
     const bootstrap = async () => {
+      // 1. Validate Schema Drift (Non-blocking but diagnostic)
+      await validateSchema()
+
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!mounted || ignore) return

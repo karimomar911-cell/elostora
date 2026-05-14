@@ -2,7 +2,7 @@ import { supabase } from '../core/api/supabaseClient'
 
 // ── Fetch all profiles (with service center join) ──
 export const fetchAllProfiles = async () => {
-  const { data, error } = await supabase
+  const query = supabase
     .from('profiles')
     .select(`
       id,
@@ -15,15 +15,24 @@ export const fetchAllProfiles = async () => {
       created_at,
       service_centers ( id, name )
     `)
-    .eq('is_deleted', false)
     .order('created_at', { ascending: false })
-  if (error) throw error
+
+  const { data, error } = await query.eq('is_deleted', false)
+  
+  if (error) {
+    if (error.code === '42703') {
+      const fallback = await query
+      if (fallback.error) throw fallback.error
+      return fallback.data
+    }
+    throw error
+  }
   return data
 }
 
 // ── Fetch profiles by role ──
 export const fetchProfilesByRole = async (role) => {
-  const { data, error } = await supabase
+  const query = supabase
     .from('profiles')
     .select(`
       id,
@@ -37,15 +46,24 @@ export const fetchProfilesByRole = async (role) => {
       service_centers ( id, name )
     `)
     .eq('role', role)
-    .eq('is_deleted', false)
     .order('created_at', { ascending: false })
-  if (error) throw error
+
+  const { data, error } = await query.eq('is_deleted', false)
+  
+  if (error) {
+    if (error.code === '42703') {
+      const fallback = await query
+      if (fallback.error) throw fallback.error
+      return fallback.data
+    }
+    throw error
+  }
   return data
 }
 
 // ── Fetch profiles by service center ──
 export const fetchProfilesByCenter = async (centerId) => {
-  const { data, error } = await supabase
+  const query = supabase
     .from('profiles')
     .select(`
       id,
@@ -59,9 +77,18 @@ export const fetchProfilesByCenter = async (centerId) => {
       service_centers ( id, name )
     `)
     .eq('service_center_id', centerId)
-    .eq('is_deleted', false)
     .order('created_at', { ascending: false })
-  if (error) throw error
+
+  const { data, error } = await query.eq('is_deleted', false)
+  
+  if (error) {
+    if (error.code === '42703') {
+      const fallback = await query
+      if (fallback.error) throw fallback.error
+      return fallback.data
+    }
+    throw error
+  }
   return data
 }
 
@@ -88,13 +115,24 @@ export const updateProfile = async (id, payload) => {
 
 // ── Count profiles per role ──
 export const countProfilesByRole = async () => {
-  const { data, error } = await supabase
+  const query = supabase
     .from('profiles')
     .select('role')
-    .eq('is_deleted', false)
-  if (error) throw error
 
-  return data.reduce((acc, { role }) => {
+  const { data, error } = await query.eq('is_deleted', false)
+  
+  let finalData = data
+  if (error) {
+    if (error.code === '42703') {
+      const fallback = await query
+      if (fallback.error) throw fallback.error
+      finalData = fallback.data
+    } else {
+      throw error
+    }
+  }
+
+  return (finalData || []).reduce((acc, { role }) => {
     acc[role] = (acc[role] || 0) + 1
     return acc
   }, {})
