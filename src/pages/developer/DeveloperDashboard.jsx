@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Building2, Shield, Users, Receipt, DollarSign } from 'lucide-react'
 import { useAuth } from '../../core/auth/AuthProvider'
 import { useDeveloperBranding } from '../../hooks/useDeveloperBranding'
 import { fetchServiceCenters } from '../../services/centerService'
 import { countProfilesByRole } from '../../services/profileService'
-import { countInvoices, sumInvoiceTotals } from '../../services/invoiceService'
+import { countInvoices, sumInvoiceTotals, fetchRevenueTrend } from '../../services/invoiceService'
 import StatCard from '../../components/StatCard'
+import LiveActivityFeed from '../../components/LiveActivityFeed'
+import IdentityMatrix from '../../components/dashboard/IdentityMatrix'
+import RevenueChart from '../../components/dashboard/RevenueChart'
 import { ROUTES } from '../../core/routing/routes'
 import toast from 'react-hot-toast'
 import { compressImageFile } from '../../utils/imageHelpers'
@@ -31,14 +35,15 @@ const DeveloperDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [centersData, roleCounts, invoiceCount, invoiceTotal] = await Promise.all([
+        const [centersData, roleCounts, invoiceCount, invoiceTotal, trend] = await Promise.all([
           fetchServiceCenters(),
           countProfilesByRole(),
           countInvoices(),
           sumInvoiceTotals(),
+          fetchRevenueTrend()
         ])
         setCenters(centersData)
-        setStats({ roleCounts, invoiceCount, invoiceTotal })
+        setStats({ roleCounts, invoiceCount, invoiceTotal, trend })
       } catch (err) {
         toast.error('Failed to load system-wide metrics.')
         console.error(err)
@@ -127,15 +132,11 @@ const DeveloperDashboard = () => {
         <div className="flex items-center gap-3">
           <Link to={ROUTES.DEVELOPER_CENTERS} className="btn-secondary group">
             <span>Manage Hubs</span>
-            <svg className="w-4 h-4 opacity-50 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+            <Building2 className="w-4 h-4 opacity-50 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link to={ROUTES.DEVELOPER_USERS} className="btn-primary group">
             <span>Control Tower</span>
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+            <Shield className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
       </div>
@@ -267,164 +268,126 @@ const DeveloperDashboard = () => {
           value={loading ? null : centers.length}
           subtitle="Regional operation hubs"
           loading={loading}
+          delay={1}
           color="blue"
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
+          icon={<Building2 className="w-6 h-6" />}
         />
         <StatCard
           title="Aggregated Users"
           value={loading ? null : totalUsers}
           subtitle="Multi-role accounts"
           loading={loading}
+          delay={2}
           color="purple"
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
+          icon={<Users className="w-6 h-6" />}
         />
         <StatCard
           title="Global Transactions"
           value={loading ? null : stats?.invoiceCount}
           subtitle="System-wide orders"
           loading={loading}
+          delay={3}
           color="green"
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+          icon={<Receipt className="w-6 h-6" />}
         />
         <StatCard
           title="Ecosystem Revenue"
           value={loading ? null : `$${(stats?.invoiceTotal ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
           subtitle="Total platform flow"
           loading={loading}
+          delay={4}
           color="yellow"
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          icon={<DollarSign className="w-6 h-6" />}
         />
       </div>
 
-      {/* ── Role breakdown + Centers ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-        {/* Role breakdown */}
-        <div className="bg-white rounded-3xl shadow-premium border border-slate-100 p-8 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">Identity Matrix</h2>
-            <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-            </div>
-          </div>
+      {/* ── Advanced Analytics & Ecosystem Data ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
+        {/* Left Column: Analytics & Centers */}
+        <div className="xl:col-span-2 space-y-8 flex flex-col min-w-0">
           
-          {loading ? (
-            <div className="space-y-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex justify-between h-4 bg-slate-50 rounded w-full animate-pulse" />
-                  <div className="h-1.5 bg-slate-50 rounded-full w-full" />
-                </div>
-              ))}
+          {/* Revenue Chart */}
+          <RevenueChart trend={stats?.trend} loading={loading} />
+
+          {/* Service Centers list */}
+          <div className="bg-white rounded-3xl shadow-premium border border-slate-100 overflow-hidden group">
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+              <div>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">Ecosystem Nodes</h2>
+                <p className="text-sm font-semibold text-slate-400 mt-0.5">Primary service center network</p>
+              </div>
+              <Link to={ROUTES.DEVELOPER_CENTERS} className="p-2.5 rounded-xl bg-white border border-slate-200 text-primary-600 hover:bg-primary-50 hover:border-primary-200 transition-all shadow-sm">
+                <Building2 className="w-5 h-5" />
+              </Link>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {[
-                { role: 'developer', label: 'Engineers', color: 'bg-primary-500', icon: 'bg-primary-50 text-primary-600' },
-                { role: 'admin',     label: 'Managers',  color: 'bg-indigo-500', icon: 'bg-indigo-50 text-indigo-600'   },
-                { role: 'employee',  label: 'Operators', color: 'bg-emerald-500', icon: 'bg-emerald-50 text-emerald-600' },
-                { role: 'client',    label: 'Customers', color: 'bg-amber-500', icon: 'bg-amber-50 text-amber-600'   },
-              ].map(({ role, label, color, icon }) => {
-                const count = stats?.roleCounts?.[role] ?? 0
-                const pct   = totalUsers ? Math.round((count / totalUsers) * 100) : 0
-                return (
-                  <div key={role} className="group/item">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg ${icon} flex items-center justify-center text-[10px] font-black`}>
-                          {label.charAt(0)}
-                        </div>
-                        <span className="text-sm font-bold text-slate-700 tracking-tight">{label}</span>
+
+            <div className="p-2">
+              {loading ? (
+                <div className="p-6 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-6 p-4 rounded-2xl bg-slate-50/50 animate-pulse">
+                      <div className="w-12 h-12 rounded-xl bg-slate-200" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-slate-200 rounded w-1/3" />
+                        <div className="h-3 bg-slate-200 rounded w-1/4" />
                       </div>
-                      <span className="text-xs font-black text-slate-400 tracking-tighter">{count} <span className="opacity-40 ml-1">/ {pct}%</span></span>
                     </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${color} rounded-full transition-all duration-1000 ease-out shadow-sm`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+                  ))}
+                </div>
+              ) : centers.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-200">
+                    <Building2 className="w-10 h-10" />
                   </div>
-                )
-              })}
+                  <p className="text-slate-500 font-bold text-lg tracking-tight">Zero nodes detected</p>
+                  <Link to={ROUTES.DEVELOPER_CENTERS} className="btn-primary mt-6">Initialize First Center</Link>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {centers.slice(0, 5).map((center) => (
+                    <div key={center.id}
+                      className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all group/node">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden group-hover/node:border-primary-200 transition-colors">
+                        {center.logo_url ? (
+                          <img src={center.logo_url} alt={center.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-slate-800 font-black text-lg">{center.name?.charAt(0)?.toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-black text-slate-900 tracking-tight truncate">{center.name}</p>
+                        <p className="text-xs font-semibold text-slate-400 mt-0.5 flex items-center gap-2">
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
+                          Activated {new Date(center.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-xs font-black text-slate-800 uppercase tracking-wider">Node Active</p>
+                          <p className="text-[10px] font-bold text-emerald-500 mt-0.5">Online • Stable</p>
+                        </div>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="px-8 py-4 mt-2 border-t border-slate-50 flex justify-center">
+                <Link to={ROUTES.DEVELOPER_CENTERS} className="text-[10px] font-black text-slate-400 hover:text-primary-600 uppercase tracking-[0.2em] transition-colors">
+                  Full Network Topology & Audit
+                </Link>
+              </div>
             </div>
-          )}
-          <div className="pt-4 border-t border-slate-50">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest text-center italic">Biometric & Identity Distribution</p>
           </div>
         </div>
 
-        {/* Service Centers list */}
-        <div className="bg-white rounded-3xl shadow-premium border border-slate-100 overflow-hidden group lg:col-span-2">
-          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
-            <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">Ecosystem Nodes</h2>
-              <p className="text-sm font-semibold text-slate-400 mt-0.5">Primary service center network</p>
-            </div>
-            <Link to={ROUTES.DEVELOPER_CENTERS} className="p-2.5 rounded-xl bg-white border border-slate-200 text-primary-600 hover:bg-primary-50 hover:border-primary-200 transition-all shadow-sm">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </Link>
-          </div>
-
-          <div className="p-2">
-            {loading ? (
-              <div className="p-6 space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-6 p-4 rounded-2xl bg-slate-50/50 animate-pulse">
-                    <div className="w-12 h-12 rounded-xl bg-slate-200" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-slate-200 rounded w-1/3" />
-                      <div className="h-3 bg-slate-200 rounded w-1/4" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : centers.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-200">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                </div>
-                <p className="text-slate-500 font-bold text-lg tracking-tight">Zero nodes detected</p>
-                <Link to={ROUTES.DEVELOPER_CENTERS} className="btn-primary mt-6">Initialize First Center</Link>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {centers.slice(0, 5).map((center) => (
-                  <div key={center.id}
-                    className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all group/node">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden group-hover/node:border-primary-200 transition-colors">
-                      {center.logo_url ? (
-                        <img src={center.logo_url} alt={center.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-slate-800 font-black text-lg">{center.name?.charAt(0)?.toUpperCase()}</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-black text-slate-900 tracking-tight truncate">{center.name}</p>
-                      <p className="text-xs font-semibold text-slate-400 mt-0.5 flex items-center gap-2">
-                        <span className="w-1 h-1 rounded-full bg-slate-300" />
-                        Activated {new Date(center.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-xs font-black text-slate-800 uppercase tracking-wider">Node Active</p>
-                        <p className="text-[10px] font-bold text-emerald-500 mt-0.5">Online • Stable</p>
-                      </div>
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="px-8 py-4 mt-2 border-t border-slate-50 flex justify-center">
-              <Link to={ROUTES.DEVELOPER_CENTERS} className="text-[10px] font-black text-slate-400 hover:text-primary-600 uppercase tracking-[0.2em] transition-colors">
-                Full Network Topology & Audit
-              </Link>
-            </div>
-          </div>
+        {/* Right Column: Live Feed & Identity Matrix */}
+        <div className="space-y-8 flex flex-col min-w-0">
+          <LiveActivityFeed />
+          
+          {/* Role breakdown */}
+          <IdentityMatrix stats={stats} loading={loading} totalUsers={totalUsers} />
         </div>
       </div>
     </div>

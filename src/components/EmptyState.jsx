@@ -1,15 +1,24 @@
-const EmptyState = ({ title, message, action }) => (
-  <div className="flex flex-col items-center justify-center py-16 text-center">
-    <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-      </svg>
-    </div>
-    <h3 className="text-base font-semibold text-gray-700 mb-1">{title}</h3>
-    <p className="text-sm text-gray-400 max-w-xs">{message}</p>
-    {action && <div className="mt-5">{action}</div>}
-  </div>
+import { motion } from 'framer-motion'
+import { Inbox } from 'lucide-react'
+import { cn } from '../utils/cn'
+
+const EmptyState = ({ title, message, action, icon: Icon = Inbox, className }) => (
+  <motion.div 
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.4, type: 'spring' }}
+    className={cn("flex flex-col items-center justify-center py-20 px-6 text-center", className)}
+  >
+    <motion.div 
+      whileHover={{ scale: 1.05, rotate: 5 }}
+      className="w-20 h-20 bg-slate-50 border border-slate-100 shadow-sm rounded-3xl flex items-center justify-center mb-6 text-slate-400"
+    >
+      <Icon className="w-10 h-10" />
+    </motion.div>
+    <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">{title}</h3>
+    <p className="text-sm font-medium text-slate-500 max-w-sm mx-auto leading-relaxed">{message}</p>
+    {action && <div className="mt-8">{action}</div>}
+  </motion.div>
 )
 
 export default EmptyState

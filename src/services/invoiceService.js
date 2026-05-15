@@ -126,3 +126,26 @@ export const sumInvoiceTotals = async () => {
   if (error) throw error
   return data.reduce((sum, row) => sum + (parseFloat(row.final_price) || 0), 0)
 }
+
+// ── Fetch revenue trend ──
+export const fetchRevenueTrend = async () => {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('service_date, final_price')
+    .order('service_date', { ascending: true })
+  
+  if (error) throw error
+  
+  const trend = data.reduce((acc, row) => {
+    const date = new Date(row.service_date)
+    if (isNaN(date.getTime())) return acc
+    const month = date.toLocaleString('default', { month: 'short' })
+    const value = parseFloat(row.final_price) || 0
+    
+    if (!acc[month]) acc[month] = { name: month, revenue: 0 }
+    acc[month].revenue += value
+    return acc
+  }, {})
+  
+  return Object.values(trend)
+}

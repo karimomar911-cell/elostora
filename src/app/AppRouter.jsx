@@ -1,10 +1,13 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Suspense } from 'react'
+import { lazyWithRetry as lazy } from '../utils/lazyImport'
+import { Routes, Route, Navigate, useLocation, useOutlet } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { ROUTES, ROLES, ROLE_HOME } from '../core/routing/routes'
 import { PrivateRoute, RoleRoute } from '../core/routing/guards'
 import { useAuth } from '../core/auth/AuthProvider'
 import AppLayout from '../layouts/AppLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
+import CommandPalette from '../components/CommandPalette'
 
 // ─── Lazy-loaded pages ────────────────────────────────────────────────────────
 const LoginPage          = lazy(() => import('../pages/LoginPage'))
@@ -37,8 +40,30 @@ const InvoicesListPage = lazy(() => import('../pages/invoices/InvoicesListPage')
 const InvoiceFormPage  = lazy(() => import('../pages/invoices/InvoiceFormPage'))
 const InventoryPage    = lazy(() => import('../pages/invoices/InventoryPage'))
 
-// ─── Page wrapper with layout ─────────────────────────────────────────────────
-const L = ({ children }) => <AppLayout>{children}</AppLayout>
+// ─── Page wrapper with persistent layout ──────────────────────────────────────
+const AppLayoutOutlet = () => {
+  const location = useLocation()
+  const element = useOutlet()
+
+  return (
+    <AppLayout>
+      <AnimatePresence mode="wait">
+        {element && (
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.99 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="h-full"
+          >
+            {element}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AppLayout>
+  )
+}
 
 // ─── Full-page suspense fallback ──────────────────────────────────────────────
 const PageFallback = () => (
@@ -55,8 +80,10 @@ const AppRouter = () => {
   if (loading) return <PageFallback />
 
   return (
-    <Suspense fallback={<PageFallback />}>
-      <Routes>
+    <>
+      {isAuthenticated && <CommandPalette />}
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
 
         {/* ── Public ── */}
         <Route
@@ -82,107 +109,111 @@ const AppRouter = () => {
           }
         />
 
-        {/* ══ DEVELOPER ══ */}
-        <Route path={ROUTES.DEVELOPER_DASHBOARD} element={
-          <RoleRoute roles={[ROLES.DEVELOPER]}>
-            <L><DeveloperDashboard /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.DEVELOPER_CENTERS} element={
-          <RoleRoute roles={[ROLES.DEVELOPER]}>
-            <L><ServiceCentersPage /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.DEVELOPER_USERS} element={
-          <RoleRoute roles={[ROLES.DEVELOPER]}>
-            <L><UsersPage /></L>
-          </RoleRoute>
-        } />
+        {/* ── Layout Wrapper for Dashboard Routes ── */}
+        <Route element={<AppLayoutOutlet />}>
+          {/* ══ DEVELOPER ══ */}
+          <Route path={ROUTES.DEVELOPER_DASHBOARD} element={
+            <RoleRoute roles={[ROLES.DEVELOPER]}>
+              <DeveloperDashboard />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.DEVELOPER_CENTERS} element={
+            <RoleRoute roles={[ROLES.DEVELOPER]}>
+              <ServiceCentersPage />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.DEVELOPER_USERS} element={
+            <RoleRoute roles={[ROLES.DEVELOPER]}>
+              <UsersPage />
+            </RoleRoute>
+          } />
 
-        {/* ══ ADMIN ══ */}
-        <Route path={ROUTES.ADMIN_DASHBOARD} element={
-          <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><AdminDashboard /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.ADMIN_EMPLOYEES} element={
-          <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><EmployeesPage /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.ADMIN_CLIENTS} element={
-          <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><AdminClientsPage /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.ADMIN_INVOICES} element={
-          <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><InvoicesListPage /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.ADMIN_CENTERS} element={
-          <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><AdminCentersPage /></L>
-          </RoleRoute>
-        } />
+          {/* ══ ADMIN ══ */}
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={
+            <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <AdminDashboard />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.ADMIN_EMPLOYEES} element={
+            <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <EmployeesPage />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.ADMIN_CLIENTS} element={
+            <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <AdminClientsPage />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.ADMIN_INVOICES} element={
+            <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <InvoicesListPage />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.ADMIN_CENTERS} element={
+            <RoleRoute roles={[ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <AdminCentersPage />
+            </RoleRoute>
+          } />
 
-        {/* ══ EMPLOYEE ══ */}
-        <Route path={ROUTES.EMPLOYEE_DASHBOARD} element={
-          <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><EmployeeDashboard /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.EMPLOYEE_INVOICES} element={
-          <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><InvoicesListPage /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.EMPLOYEE_CLIENTS} element={
-          <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><EmployeeClientsPage /></L>
-          </RoleRoute>
-        } />
+          {/* ══ EMPLOYEE ══ */}
+          <Route path={ROUTES.EMPLOYEE_DASHBOARD} element={
+            <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <EmployeeDashboard />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.EMPLOYEE_INVOICES} element={
+            <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <InvoicesListPage />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.EMPLOYEE_CLIENTS} element={
+            <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <EmployeeClientsPage />
+            </RoleRoute>
+          } />
 
-        {/* ══ CLIENT ══ */}
-        <Route path={ROUTES.CLIENT_DASHBOARD} element={
-          <RoleRoute roles={[ROLES.CLIENT, ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><ClientDashboard /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.CLIENT_INVOICES} element={
-          <RoleRoute roles={[ROLES.CLIENT, ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><ClientInvoicesPage /></L>
-          </RoleRoute>
-        } />
+          {/* ══ CLIENT ══ */}
+          <Route path={ROUTES.CLIENT_DASHBOARD} element={
+            <RoleRoute roles={[ROLES.CLIENT, ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <ClientDashboard />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.CLIENT_INVOICES} element={
+            <RoleRoute roles={[ROLES.CLIENT, ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <ClientInvoicesPage />
+            </RoleRoute>
+          } />
 
-        {/* ══ SHARED INVOICE ROUTES ══ */}
-        <Route path={ROUTES.INVOICE_NEW} element={
-          <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><InvoiceFormPage /></L>
-          </RoleRoute>
-        } />
+          {/* ══ SHARED INVOICE ROUTES ══ */}
+          <Route path={ROUTES.INVOICE_NEW} element={
+            <RoleRoute roles={[ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <InvoiceFormPage />
+            </RoleRoute>
+          } />
 
-        {/* ══ SHARED ══ */}
-        <Route path={ROUTES.INVENTORY} element={
-          <RoleRoute roles={[ROLES.INVENTORY_MANAGER, ROLES.ADMIN, ROLES.DEVELOPER]}>
-            <L><InventoryPage /></L>
-          </RoleRoute>
-        } />
-        <Route path={ROUTES.CHANGE_PASSWORD} element={
-          <PrivateRoute>
-            <L><ChangePasswordPage /></L>
-          </PrivateRoute>
-        } />
-        <Route path={ROUTES.SEARCH} element={
-          <PrivateRoute>
-            <L><SearchPage /></L>
-          </PrivateRoute>
-        } />
+          {/* ══ SHARED ══ */}
+          <Route path={ROUTES.INVENTORY} element={
+            <RoleRoute roles={[ROLES.INVENTORY_MANAGER, ROLES.ADMIN, ROLES.DEVELOPER]}>
+              <InventoryPage />
+            </RoleRoute>
+          } />
+          <Route path={ROUTES.CHANGE_PASSWORD} element={
+            <PrivateRoute>
+              <ChangePasswordPage />
+            </PrivateRoute>
+          } />
+          <Route path={ROUTES.SEARCH} element={
+            <PrivateRoute>
+              <SearchPage />
+            </PrivateRoute>
+          } />
+        </Route>
 
         <Route path="*" element={<NotFoundPage />} />
 
       </Routes>
-    </Suspense>
+      </Suspense>
+    </>
   )
 }
 

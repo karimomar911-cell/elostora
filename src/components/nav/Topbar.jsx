@@ -1,6 +1,6 @@
 import { useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../../core/auth/AuthProvider'
-import { MenuIcon, SearchIcon } from './navConfig'
+import { MenuIcon, SearchIcon, ChevronIcon } from './navConfig'
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from './navConfig'
 import { ROUTES } from '../../core/routing/routes'
 
@@ -53,9 +53,7 @@ const Topbar = ({ onMenuClick }) => {
           {crumbs.map(({ label, path, isLast }, i) => (
             <span key={path} className="flex items-center gap-2">
               {i > 0 && (
-                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronIcon className="w-4 h-4 text-slate-300" />
               )}
               {isLast ? (
                 <span className="font-bold text-slate-900 tracking-tight">{label}</span>

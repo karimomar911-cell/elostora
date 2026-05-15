@@ -47,8 +47,15 @@ export const searchProfiles = async (query, centerId = null) => {
 
   if (centerId) req = req.eq('service_center_id', centerId)
 
-  const { data, error } = await req
-  if (error) throw error
+  const { data, error } = await req.eq('is_deleted', false)
+  if (error) {
+    if (error.code === '42703') {
+      const fallback = await req
+      if (fallback.error) throw fallback.error
+      return fallback.data
+    }
+    throw error
+  }
   return data
 }
 

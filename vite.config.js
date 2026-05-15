@@ -15,7 +15,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['framer-motion', 'lucide-react', 'clsx', 'tailwind-merge'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-utils': ['zod', 'react-hook-form', 'zustand'],
         },
       },
     },

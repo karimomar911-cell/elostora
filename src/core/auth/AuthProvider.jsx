@@ -19,18 +19,19 @@ export const AuthProvider = ({ children }) => {
 
   const loadProfile = useCallback(async (userId, userMetadata = {}) => {
     try {
-      // Fetch profile with schema-error resilience already handled in ProfileService
-      const profileData = await ProfileService.fetchProfile(userId)
-      
-      if (profileData) {
-        setProfile(profileData)
-        setRecoveryRequired(false)
-        return profileData
+      try {
+        // Fetch profile with schema-error resilience already handled in ProfileService
+        const profileData = await ProfileService.fetchProfile(userId)
+        
+        if (profileData) {
+          setProfile(profileData)
+          setRecoveryRequired(false)
+          return profileData
+        }
+      } catch (err) {
+        console.error('[AuthProvider] fetchProfile failed (ignoring to allow fallback):', err.message)
+        // We don't throw here; we let the metadata fallback below handle it
       }
-    } catch (err) {
-      console.error('[AuthProvider] fetchProfile failed (ignoring to allow fallback):', err.message)
-      // We don't throw here; we let the metadata fallback below handle it
-    }
 
       // If no profile exists yet, fall back to the authenticated user's metadata.
       // This is required in development when the profile trigger has not created a row.

@@ -1,4 +1,7 @@
-const StatCard = ({ title, value, subtitle, icon, color = 'blue', loading = false }) => {
+import { motion } from 'framer-motion'
+import { cn } from '../utils/cn'
+
+const StatCard = ({ title, value, subtitle, icon, color = 'blue', loading = false, delay = 0 }) => {
   const colors = {
     blue:   { bg: 'from-primary-50 to-white',   icon: 'bg-primary-100 text-primary-600',   accent: 'bg-primary-600' },
     green:  { bg: 'from-emerald-50 to-white',  icon: 'bg-emerald-100 text-emerald-600',  accent: 'bg-emerald-600' },
@@ -9,14 +12,29 @@ const StatCard = ({ title, value, subtitle, icon, color = 'blue', loading = fals
   const c = colors[color] ?? colors.blue
 
   return (
-    <div className={`relative overflow-hidden group bg-gradient-to-br ${c.bg} rounded-2xl shadow-premium border border-slate-100 p-6 transition-all duration-300 hover:shadow-premium-hover hover:-translate-y-1 animate-fade-in`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: delay * 0.1, type: 'spring', bounce: 0.4 }}
+      whileHover={{ y: -4, scale: 1.01 }}
+      className={cn(
+        "relative overflow-hidden group bg-gradient-to-br rounded-2xl shadow-premium border border-slate-100 p-6 transition-colors duration-300",
+        c.bg
+      )}
+    >
       {/* Accent bar */}
-      <div className={`absolute top-0 left-0 w-1.5 h-full ${c.accent} opacity-20 group-hover:opacity-100 transition-opacity`} />
+      <motion.div 
+        className={cn("absolute top-0 left-0 w-1.5 h-full opacity-20 group-hover:opacity-100 transition-opacity", c.accent)} 
+        layoutId={`accent-${title}`}
+      />
       
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 rounded-2xl ${c.icon} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+      <div className="flex items-center justify-between mb-4 relative z-10">
+        <motion.div 
+          whileHover={{ rotate: 5, scale: 1.1 }}
+          className={cn("w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm transition-colors", c.icon)}
+        >
           {icon}
-        </div>
+        </motion.div>
         {loading ? (
           <div className="w-4 h-4 border-2 border-slate-200 border-t-primary-500 rounded-full animate-spin" />
         ) : (
@@ -38,7 +56,7 @@ const StatCard = ({ title, value, subtitle, icon, color = 'blue', loading = fals
           </p>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }
 
