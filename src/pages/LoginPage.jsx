@@ -338,9 +338,8 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* ── Developer Tools (Only available in development) ── */}
-      {import.meta.env.DEV && (
-        <>
+      {/* ── Developer Tools (Password Protected) ── */}
+      <>
           <button 
             onClick={() => {
               if (isDevMode) {
@@ -526,7 +525,6 @@ const LoginPage = () => {
         </div>
       )}
     </>
-  )}
 
     </div>
   )
